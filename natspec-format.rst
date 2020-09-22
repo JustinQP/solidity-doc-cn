@@ -36,23 +36,27 @@ Documentation is inserted above each ``class``, ``interface`` and
    documentation <https://vyper.readthedocs.io/en/latest/structure-of-a-contract.html#natspec-metadata>`__.
 
 The following example shows a contract and a function using all available tags.
-Note: NatSpec currently does NOT apply to public state variables (see
-`solidity#3418 <https://github.com/ethereum/solidity/issues/3418>`__),
-even if they are declared public and therefore do affect the ABI. Note:
-The Solidity compiler only interprets tags if they are external or
-public. You are welcome to use similar comments for your internal and
-private functions, but those will not be parsed.
+
+.. note::
+
+  NatSpec currently does NOT apply to public state variables (see
+  `solidity#3418 <https://github.com/ethereum/solidity/issues/3418>`__),
+  even if they are declared public and therefore do affect the ABI. 
+
+  The Solidity compiler only interprets tags if they are external or
+  public. You are welcome to use similar comments for your internal and
+  private functions, but those will not be parsed.
 
 .. code:: solidity
 
-   pragma solidity ^0.5.6;
+   // SPDX-License-Identifier: GPL-3.0
+   pragma solidity >0.6.0 <0.7.0;
 
    /// @title A simulator for trees
    /// @author Larry A. Gardner
    /// @notice You can use this contract for only the most basic simulation
    /// @dev All function calls are currently implemented without side effects
    contract Tree {
-       /// @author Mary A. Botanist
        /// @notice Calculate tree age in years, rounded up, for live trees
        /// @dev The Alexandr N. Tetearing algorithm could increase precision
        /// @param rings The number of rings from dendrochronological sample
@@ -60,28 +64,53 @@ private functions, but those will not be parsed.
        function age(uint256 rings) external pure returns (uint256) {
            return rings + 1;
        }
-   }
+
+      /// @notice Returns the amount of leaves the tree has.
+      /// @dev Returns only a fixed number.
+      function leaves() external virtual pure returns(uint256) {
+          return 2;
+      }
+  }
+
+    contract Plant {
+        function leaves() external virtual pure returns(uint256) {
+            return 3;
+        }
+    }
+
+    contract KumquatTree is Tree, Plant {
+      function age(uint256 rings) external override pure returns (uint256) {
+          return rings + 2;
+      }
+
+    /// Return the amount of leaves that this specific kind of tree has
+    /// @inheritdoc Tree
+    function leaves() external override(Tree, Plant) pure returns(uint256) {
+        return 3;
+        }
+  }
 
 .. _header-tags:
 
-标签
-======
+标签Tags
+=========
 
 All tags are optional. The following table explains the purpose of each
 NatSpec tag and where it may be used. As a special case, if no tags are
-used then the Solidity compiler will interpret a `///` or `/**` comment
-in the same way as if it were tagged with `@notice`.
+used then the Solidity compiler will interpret a ``///`` or ``/**`` comment
+in the same way as if it were tagged with ``@notice``.
 
-=========== =============================================================================== =============================
-Tag                                                                                         Context
-=========== =============================================================================== =============================
-``@title``  A title that should describe the contract/interface                             contract, interface
-``@author`` The name of the author                                                          contract, interface, function
-``@notice`` Explain to an end user what this does                                           contract, interface, function
-``@dev``    Explain to a developer any extra details                                        contract, interface, function
-``@param``  Documents a parameter just like in doxygen (must be followed by parameter name) function
-``@return`` Documents the return type of a contract's function                              function
-=========== =============================================================================== =============================
+=============== ====================================================================================== =============================
+Tag                                                                                                    Context
+=============== ====================================================================================== =============================
+``@title``      A title that should describe the contract/interface                                    contract, interface
+``@author``     The name of the author                                                                 contract, interface
+``@notice``     Explain to an end user what this does                                                  contract, interface, function, public state variable, event
+``@dev``        Explain to a developer any extra details                                               contract, interface, function, state variable, event
+``@param``      Documents a parameter just like in doxygen (must be followed by parameter name)        function, event
+``@return``     Documents the return variables of a contract's function                                function, public state variable
+``@inheritdoc`` Copies all missing tags from the base function (must be followed by the contract name) function, public state variable
+=============== ====================================================================================== =============================
 
 If your function returns multiple values, like ``(int quotient, int remainder)``
 then use multiple ``@return`` statements in the same format as the
@@ -119,9 +148,12 @@ documentation and you may read more at
 Inheritance Notes
 -----------------
 
-Currently it is undefined whether a contract with a function having no
-NatSpec will inherit the NatSpec of a parent contract/interface for that
-same function.
+Functions without NatSpec will automatically inherit the documentation of their
+base function. Exceptions to this are:
+
+ * When the parameter names are different.
+ * When there is more than one base function.
+ * When there is an explicit ``@inheritdoc`` tag which specifies which contract should be used to inherit.
 
 .. _header-output:
 
@@ -185,7 +217,6 @@ file should also be produced and should look like this:
       {
         "age(uint256)" :
         {
-          "author" : "Mary A. Botanist",
           "details" : "The Alexandr N. Tetearing algorithm could increase precision",
           "params" :
           {

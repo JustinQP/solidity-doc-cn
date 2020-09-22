@@ -22,7 +22,7 @@
 
 ::
 
-    pragma solidity ^0.4.11;
+    pragma solidity >=0.5.0 <0.7.0;
 
     contract WithdrawalContract {
         address public richest;
@@ -30,20 +30,16 @@
 
         mapping (address => uint) pendingWithdrawals;
 
-        function WithdrawalContract() public payable {
+        constructor() public payable {
             richest = msg.sender;
             mostSent = msg.value;
         }
 
         function becomeRichest() public payable returns (bool) {
-            if (msg.value > mostSent) {
-                pendingWithdrawals[richest] += msg.value;
-                richest = msg.sender;
-                mostSent = msg.value;
-                return true;
-            } else {
-                return false;
-            }
+            require(msg.value > mostSent, "Not enough money sent.");
+            pendingWithdrawals[richest] += msg.value;
+            richest = msg.sender;
+            mostSent = msg.value;
         }
 
         function withdraw() public {
@@ -59,31 +55,27 @@
 
 ::
 
-    pragma solidity ^0.4.11;
+    pragma solidity >=0.5.0 <0.7.0;
 
     contract SendContract {
-        address public richest;
+        address payable public richest;
         uint public mostSent;
 
-        function SendContract() public payable {
+        constructor() public payable {
             richest = msg.sender;
             mostSent = msg.value;
         }
 
         function becomeRichest() public payable returns (bool) {
-            if (msg.value > mostSent) {
-                // 这一行会导致问题（详见下文）
-                richest.transfer(msg.value);
-                richest = msg.sender;
-                mostSent = msg.value;
-                return true;
-            } else {
-                return false;
-            }
+            require(msg.value > mostSent, "Not enough money sent.");
+            // 这一行会导致问题（详见下文）
+            richest.transfer(msg.value);
+            richest = msg.sender;
+            mostSent = msg.value;
         }
     }
 
-注意，在这个例子里，攻击者可以给这个合约设下陷阱，使其进入不可用状态，比如通过使一个 fallback 函数会失败的合约成为 ``richest``
+注意，在这个例子里，攻击者可以给这个合约设下陷阱，使其进入不可用状态，比如通过使一个 fallback 或 receive 函数会失败的合约成为 ``richest``
 （可以在 fallback 函数中调用 ``revert()`` 或者直接在 fallback 函数中使用超过 2300 gas 来使其执行失败）。这样，当这个合约调用 ``transfer`` 来给“下过毒”的合约
 发送资金时，调用会失败，从而导致 ``becomeRichest`` 函数失败，这个合约也就被永远卡住了。
 
@@ -109,7 +101,7 @@
 
 ::
 
-    pragma solidity ^0.4.22;
+    pragma solidity >=0.4.22 <0.7.0;
 
     contract AccessRestriction {
         // 这些将在构造阶段被赋值
@@ -118,9 +110,9 @@
         address public owner = msg.sender;
         uint public creationTime = now;
 
-        // 修饰器可以用来更改
+        // 修改器可以用来更改
         // 一个函数的函数体。
-        // 如果使用这个修饰器，
+        // 如果使用这个修改器，
         // 它会预置一个检查，仅允许
         // 来自特定地址的
         // 函数调用。
@@ -131,7 +123,7 @@
                 "Sender not authorized."
             );
             // 不要忘记写 `_;`！
-            // 它会被实际使用这个修饰器的
+            // 它会被实际使用这个修改器的
             // 函数体所替代。
             _;
         }
@@ -164,7 +156,7 @@
             delete owner;
         }
 
-        // 这个修饰器要求对函数调用
+        // 这个修改器要求对函数调用
         // 绑定一定的费用。
         // 如果调用方发送了过多的费用，
         // 他/她会得到退款，但需要先执行函数体。
@@ -245,7 +237,7 @@
 
 ::
 
-    pragma solidity ^0.4.22;
+    pragma solidity >=0.4.22 <0.7.0;
 
     contract StateMachine {
         enum Stages {
@@ -274,7 +266,7 @@
         }
 
         // 执行基于时间的阶段转换。
-        // 请确保首先声明这个修饰器，
+        // 请确保首先声明这个修改器，
         // 否则新阶段不会被带入账户。
         modifier timedTransitions() {
             if (stage == Stages.AcceptingBlindedBids &&
@@ -287,7 +279,7 @@
             _;
         }
 
-        // 这里的修饰器顺序非常重要！
+        // 这里的修改器顺序非常重要！
         function bid()
             public
             payable
@@ -304,7 +296,7 @@
         {
         }
 
-        // 这个修饰器在函数执行结束之后
+        // 这个修改器在函数执行结束之后
         // 使合约进入下一个阶段。
         modifier transitionNext()
         {

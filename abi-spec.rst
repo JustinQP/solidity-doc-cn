@@ -4,7 +4,7 @@
 .. _ABI:
 
 ******************************************
-|ABI| 说明
+应用二进制接口说明
 ******************************************
 
 基本设计
@@ -22,7 +22,8 @@
 |function_selector|
 =================================
 
-一个函数调用数据的前 4 字节，指定了要调用的函数。这就是某个函数签名的 Keccak（SHA-3）哈希的前 4 字节（高位在左的大端序）（译注：这里的“高位在左的大端序“，指最高位字节存储在最低位地址上的一种串行化编码方式，即高位字节在左）。
+一个函数调用数据的前 4 字节，指定了要调用的函数。这就是某个函数签名的 Keccak 哈希的前 4 字节（高位在左的大端序）
+（译注：这里的“高位在左的大端序“，指最高位字节存储在最低位地址上的一种串行化编码方式，即高位字节在左）。
 这种签名被定义为基础原型的规范表达，基础原型即是函数名称加上由括号括起来的参数类型列表，参数类型间由一个逗号分隔开，且没有空格。
 
 .. note::
@@ -139,15 +140,15 @@
 
 - 具有 ``k`` （呈现为类型 ``uint256``）长度的 ``bytes``：
 
-  ``enc(X) = enc(k) pad_right(X)``，即是说，字节数被编码为 ``uint256``，紧跟着实际的 ``X`` 的字节码序列，再在前边（左边）补上可以使 ``len(enc(X))`` 成为 32 的倍数的最少数量的 0 值字节数据。
+  ``enc(X) = enc(k) pad_right(X)``，即是说，字节数被编码为 ``uint256``，紧跟着实际的 ``X`` 的字节码序列，再在高位（左侧）补上可以使 ``len(enc(X))`` 成为 32 的倍数的最少数量的 0 值字节数据。
 
 - ``string``：
 
   ``enc(X) = enc(enc_utf8(X))``，即是说，``X`` 被 utf-8 编码，且在后续编码中将这个值解释为 ``bytes`` 类型。注意，在随后的编码中使用的长度是其 utf-8 编码的字符串的字节数，而不是其字符数。
 
-- ``uint<M>``：``enc(X)`` 是在 ``X`` 的大端序编码的前边（左边）补充若干 0 值字节以使其长度成为 32 字节。
+- ``uint<M>``：``enc(X)`` 是在 ``X`` 的大端序编码的高位（左侧）补充若干 0 值字节以使其长度成为 32 字节。
 - ``address``：与 ``uint160`` 的情况相同。
-- ``int<M>``：``enc(X)`` 是在 ``X`` 的大端序的 2 的补码编码的高位（左侧）添加若干字节数据以使其长度成为 32 字节；对于负数，添加值为 ``0xff`` （即 8 位全为 1，译者注）的字节数据，对于正数，添加 0 值（即 8 位全为 0，译者注）字节数据。
+- ``int<M>``：``enc(X)`` 是在 ``X`` 的大端序的 2 的补码编码的高位（左侧）添加若干字节数据以使其长度成为 32 字节；对于负数，添加值为 ``0xff`` （即 8 位全为 1，译者注）的字节数据，对于非负数，添加 0 值（即 8 位全为 0，译者注）字节数据。
 - ``bool``：与 ``uint8`` 的情况相同，``1`` 用来表示 ``true``，``0`` 表示 ``false``。
 - ``fixed<M>x<N>``：``enc(X)`` 就是 ``enc(X * 10**N)``，其中 ``X * 10**N`` 可以理解为 ``int256``。
 - ``fixed``：与 ``fixed128x18`` 的情况相同。
@@ -398,14 +399,17 @@ JSON
 
 - ``outputs``：一个类似于 ``inputs`` 的对象数组，如果函数无返回值时可以被省略；
 - ``payable``：如果函数接受 |ether| ，为 ``true``；缺省为 ``false``；
-- ``stateMutability``：为下列值之一：``pure`` （:ref:`指定为不读取区块链状态 <pure-functions>`），``view`` （:ref:`指定为不修改区块链状态 <view-functions>`），``nonpayable`` 和 ``payable`` （与上文 ``payable`` 一样）。
-- ``constant``：如果函数被指定为 ``pure`` 或 ``view`` 则为 ``true``。
+- ``stateMutability``：为下列值之一：``pure`` （:ref:`指定为不读取区块链状态 <pure-functions>`），``view`` （:ref:`指定为不修改区块链状态 <view-functions>`），``nonpayable`` （默认值：不接收 Ether）和 ``payable`` （与上文 ``payable`` 一样）。
 
 ``type`` 可以被省略，缺省为 ``"function"``。
 
-Constructor 和 fallback 函数没有 ``name`` 或 ``outputs``。Fallback 函数也没有 ``inputs``。
+构造函数 Constructor 和 fallback 函数没有 ``name`` 或 ``outputs``。Fallback 函数也没有 ``inputs``。
 
-向 non-payable（即不接受 |ether| ）的函数发送非零值的 |ether| 会导致其丢失。不要这么做。
+.. note::
+    向 non-payable（即不接受 |ether| ）的函数发送非零值的 |ether| 会回退交易。
+
+.. note::
+    状态可变性 ``nonpayable`` 是默认的，不用显示指定。
 
 一个事件描述是一个有极其相似字段的 JSON 对象：
 
@@ -466,14 +470,14 @@ Constructor 和 fallback 函数没有 ``name`` 或 ``outputs``。Fallback 函数
 
 ::
 
-    pragma solidity ^0.4.19;
+    pragma solidity ^0.4.19 <0.7.0;
     pragma experimental ABIEncoderV2;
 
     contract Test {
       struct S { uint a; uint[] b; T[] c; }
       struct T { uint x; uint y; }
-      function f(S s, T t, uint a) public { }
-      function g() public returns (S s, T t, uint a) {}
+      function f(S memory, T memory, uint) public pure { }
+      function g() public pure returns (S memory, T memoryt, uint) {}
     }
 
 可由如下 JSON 来表示：

@@ -1,30 +1,64 @@
 
 .. index:: ! constant
 
-************************
-Constant 状态变量
-************************
+************************************
+Constant 和 Immutable  状态变量
+************************************
 
-状态变量可以被声明为 ``constant``。在这种情况下，只能使用那些在编译时有确定值的表达式来给它们赋值。
+状态变量声明为 ``constant`` 或者 ``immutable`` ，在这两种情况下，合约一旦部署之后，变量将不在修改。
+
+对于 ``constant`` 变量, 他的值在编译器确定，而对于 ``immutable``, 它的值在部署时确定。
+
+编译器不会为这些变量预留存储位，它们的每次出现都会被替换为相应的常量表达式（它可能被优化器计算为实际的某个值）。
+
+不是所有类型的状态变量都支持用 constant 或 ``immutable`` 来修饰，当前仅支持 `字符串 <strings>`_ (仅常量) 和 `值类型 <value-types>`_.
+
+
+::
+
+    // SPDX-License-Identifier: GPL-3.0
+    pragma solidity >0.6.4 <0.7.0;
+
+    contract C {
+        uint constant X = 32**22 + 8;
+        string constant TEXT = "abc";
+        bytes32 constant MY_HASH = keccak256("abc");
+        uint immutable decimals;
+        uint immutable maxBalance;
+        address immutable owner = msg.sender;
+
+        constructor(uint _decimals, address _reference) public {
+            decimals = _decimals;
+            // Assignments to immutables can even access the environment.
+            maxBalance = _reference.balance;
+        }
+
+        function isBalanceTooHigh(address _other) public view returns (bool) {
+            return _other.balance > maxBalance;
+        }
+    }
+
+
+Constant
+========
+如果状态变量声明为 ``constant`` (常量)。在这种情况下，只能使用那些在编译时有确定值的表达式来给它们赋值。
 任何通过访问 storage，区块链数据（例如 ``now``, ``address(this).balance`` 或者 ``block.number``）或执行数据（ ``msg.value`` 或 ``gasleft()`` ）
 或对外部合约的调用来给它们赋值都是不允许的。
 
 允许可能对内存分配产生副作用（side-effect）的表达式，但那些可能对其他内存对象产生副作用的表达式则不允许。
 
-内建（built-in）函数 ``keccak256``，``sha256``，``ripemd160``，``ecrecover``，``addmod`` 和 ``mulmod`` 是允许的（即使他们确实会调用外部合约， ``keccak256`` 除外）。
+内建（built-in）函数 ``keccak256`` ， ``sha256`` ， ``ripemd160`` ， ``ecrecover`` ， ``addmod`` 和 ``mulmod`` 是允许的（即使他们确实会调用外部合约， ``keccak256`` 除外）。
 
 允许内存分配器的副作用的原因是它可以构造复杂的对象，例如： 查找表（lookup-table）。 此功能尚不完全可用。
 
-编译器不会为这些变量预留存储位，它们的每次出现都会被替换为相应的常量表达式（它可能被优化器计算为实际的某个值）。
 
-不是所有类型的状态变量都支持用 constant 来修饰，当前支持的仅有值类型和字符串。
 
-::
+Immutable
+==========
 
-    pragma solidity >=0.4.0 <0.7.0;
+声明为不可变量(``immutable``)的变量的限制要比声明为常量(``constant``) 的变量的限制少：可以在合约的构造函数中或声明时为不可变的变量分配任意值。 不可变量在构造期间无法读取其值，并且只能赋值一次。
 
-    contract C {
-        uint constant x = 32**22 + 8;
-        string constant text = "abc";
-        bytes32 constant myHash = keccak256("abc");
-    }
+编译器生成的合约创建代码将在返回合约之前修改合约的运行时代码，方法是将对不可变量的所有引用替换为分配给它们的值。 如果要将编译器生成的运行时代码与实际存储在区块链中的代码进行比较，则这一点很重要。
+
+.. note::
+  译者注：不可变量(Immutable) 是 Solidity 0.6.5 引入的，因此0.6.5 之前的版本不可用。

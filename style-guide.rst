@@ -15,12 +15,16 @@
 
 本风格指南中的结构和许多建议是取自 python 的 `pep8 style guide <https://www.python.org/dev/peps/pep-0008/>`_ 。
 
-本指南并 *不是* 以指导正确或最佳的 solidity 编码方式为目的。本指南的目的是保持代码的 *一致性* 。
-来自 python 的参考文档 `pep8 <https://www.python.org/dev/peps/pep-0008/#a-foolish-consistency-is-the-hobgoblin-of-little-minds>`_ 。
-很好地阐述了这个概念。
 
-    风格指南是关于一致性的。重要的是与此风格指南保持一致。但项目中的一致性更重要。一个模块或功能内的一致性是最重要的。
-    但最重要的是：知道什么时候不一致 —— 有时风格指南不适用。如有疑问，请自行判断。看看其他例子，并决定什么看起来最好。并应毫不犹豫地询问他人！
+
+本指南并 *不是* 以指导正确或最佳的 solidity 编码方式为目的。本指南的目的是保持代码的 *一致性* 。
+来自 python 的参考文档 `pep8 <https://www.python.org/dev/peps/pep-0008/#a-foolish-consistency-is-the-hobgoblin-of-little-minds>`_ 。很好地阐述了这个概念。
+
+.. note::
+
+  风格指南是关于一致性的。重要的是与此风格指南保持一致。但项目中的一致性更重要。一个模块或功能内的一致性是最重要的。
+  
+  但最重要的是：知道什么时候不一致 —— 有时风格指南不适用。如有疑问，请自行判断。看看其他例子，并决定什么看起来最好。并应毫不犹豫地询问他人！
 
 ***********
 代码结构
@@ -80,32 +84,43 @@
 
 正确写法::
 
-    contract A {
-        function spam() public;
-        function ham() public;
+    pragma solidity ^0.6.0;
+
+    abstract contract A {
+        function spam() public virtual pure;
+        function ham() public virtual pure;
     }
 
 
     contract B is A {
-        function spam() public {
-            ...
+        function spam() public pure override {
+            // ...
         }
 
-        function ham() public {
-            ...
+        function ham() public pure override {
+            // ...
         }
     }
 
 错误写法::
 
-    contract A {
-        function spam() public {
-            ...
+    pragma solidity >=0.4.0 <0.7.0;
+
+    abstract contract A {
+        function spam() virtual pure public;
+        function ham() public virtual pure;
+    }
+
+
+    contract B is A {
+        function spam() public pure override {
+            // ...
         }
-        function ham() public {
-            ...
+        function ham() public pure override {
+            // ...
         }
     }
+
 
 .. _maximum_line_length:
 
@@ -126,38 +141,38 @@
 Yes::
 
     thisFunctionCallIsReallyLong(
-        longArgument1, 
-        longArgument2, 
+        longArgument1,
+        longArgument2,
         longArgument3
     );
 
 No::
 
-    thisFunctionCallIsReallyLong(longArgument1, 
-                                  longArgument2, 
+    thisFunctionCallIsReallyLong(longArgument1,
+                                  longArgument2,
                                   longArgument3
     );
-                                  
-    thisFunctionCallIsReallyLong(longArgument1, 
-        longArgument2, 
+
+    thisFunctionCallIsReallyLong(longArgument1,
+        longArgument2,
         longArgument3
-    );                                  
-                                  
+    );
+
     thisFunctionCallIsReallyLong(
         longArgument1, longArgument2,
         longArgument3
-    );                                    
+    );
 
     thisFunctionCallIsReallyLong(
-    longArgument1, 
-    longArgument2, 
+    longArgument1,
+    longArgument2,
     longArgument3
     );
 
     thisFunctionCallIsReallyLong(
-        longArgument1, 
-        longArgument2, 
-        longArgument3);        
+        longArgument1,
+        longArgument2,
+        longArgument3);
 
 赋值语句
 
@@ -209,7 +224,7 @@ No::
                       recipient,
                       publicKey,
                       amount,
-                      options); 
+                      options);
 
 源文件编码格式
 ====================
@@ -257,23 +272,30 @@ Import 语句应始终放在文件的顶部。
 函数应根据其可见性和顺序进行分组：
 
 - 构造函数
+- receive 函数（如果存在）
 - fallback 函数（如果存在）
-- 外部函数
-- 公共函数
-- 内部函数和变量
-- 私有函数和变量
+- 外部函数(external)
+- 公共函数(public)
+- 内部(internal)
+- 私有(private)
 
 在一个分组中，把 ``view`` 和 ``pure`` 函数放在最后。
 
 正确写法::
 
+    // SPDX-License-Identifier: GPL-3.0
+    pragma solidity ^0.6.0;
     contract A {
         function A() public {
             ...
         }
 
-        function() public {
-            ...
+        receive() external payable {
+            // ...
+        }
+
+        fallback() external {
+            // ...
         }
 
         // External functions
@@ -297,10 +319,20 @@ Import 语句应始终放在文件的顶部。
 
 错误写法::
 
+    // SPDX-License-Identifier: GPL-3.0
+    pragma solidity ^0.6.0;
     contract A {
 
         // External functions
         // ...
+
+
+        fallback() external {
+            // ...
+        }
+        receive() external payable {
+            // ...
+        }
 
         // Private functions
         // ...
@@ -363,15 +395,22 @@ Import 语句应始终放在文件的顶部。
     y             = 2;
     long_variable = 3;
 
-fallback 函数中不要包含空格：
+fallback 和 receive 函数中不要包含空格：
 
 正确写法::
+    receive() external payable {
+        ...
+    }
 
     function() public {
         ...
     }
 
 错误写法::
+
+    receive () external payable {
+        ...
+    }
 
     function () public {
         ...
@@ -514,7 +553,9 @@ fallback 函数中不要包含空格：
     function increment(uint x) public pure returns (uint) {
         return x + 1;}
 
-你应该严格地标示所有函数的可见性，包括构造函数。 
+你应该严格地标示所有函数的可见性，包括构造函数。
+
+
 
 Yes::
 
@@ -525,22 +566,38 @@ Yes::
 No::
 
     function implicitlyPublic(uint val) {
-        doSomething(); 
+        doSomething();
     }
 
-函数的可见性修饰符应该出现在任何自定义修饰符之前。
 
-正确写法::
+函数修改器的顺序应该是:
 
-    function kill() public onlyowner {
+1. Visibility
+2. Mutability
+3. Virtual
+4. Override
+5. Custom modifiers
+
+Yes::
+
+    function balance(uint from) public view override returns (uint)  {
+        return balanceOf[from];
+    }
+
+    function shutdown() public onlyowner {
         selfdestruct(owner);
     }
 
-错误写法::
+No::
 
-    function kill() onlyowner public {
+    function balance(uint from) public override view returns (uint)  {
+        return balanceOf[from];
+    }
+
+    function shutdown() onlyowner public {
         selfdestruct(owner);
     }
+
 
 对于长函数声明，建议将每个参数独立一行并与函数体保持相同的缩进级别。闭括号和开括号也应该
 独立一行并保持与函数声明相同的缩进级别。
@@ -645,19 +702,19 @@ Yes::
         address a,
         address b,
         address c
-    ) 
-        public 
+    )
+        public
         returns (
-            address someAddressName, 
-            uint256 LongArgument, 
+            address someAddressName,
+            uint256 LongArgument,
             uint256 Argument
         )
-    {    
+    {
         doSomething()
-        
+
         return (
-            veryLongReturnArg1, 
-            veryLongReturnArg2, 
+            veryLongReturnArg1,
+            veryLongReturnArg2,
             veryLongReturnArg3
         );
     }
@@ -668,16 +725,16 @@ No::
         address a,
         address b,
         address c
-    ) 
-        public 
-        returns (address someAddressName, 
-                 uint256 LongArgument, 
+    )
+        public
+        returns (address someAddressName,
+                 uint256 LongArgument,
                  uint256 Argument)
-    {    
+    {
         doSomething()
-        
-        return (veryLongReturnArg1, 
-                veryLongReturnArg1, 
+
+        return (veryLongReturnArg1,
+                veryLongReturnArg1,
                 veryLongReturnArg1);
     }
 
@@ -686,39 +743,87 @@ No::
 
 正确写法::
 
+    // SPDX-License-Identifier: GPL-3.0
+    pragma solidity >=0.4.22 <0.7.0;
+
+    // Base contracts just to make this compile
+    contract B {
+        constructor(uint) public {
+        }
+    }
+    contract C {
+        constructor(uint, uint) public {
+        }
+    }
+    contract D {
+        constructor(uint) public {
+        }
+    }
+
     contract A is B, C, D {
-        function A(uint param1, uint param2, uint param3, uint param4, uint param5)
+        uint x;
+
+        constructor(uint param1, uint param2, uint param3, uint param4, uint param5)
             B(param1)
             C(param2, param3)
             D(param4)
             public
         {
             // do something with param5
+            x = param5;
         }
     }
 
 错误写法::
 
-    contract A is B, C, D {
-        function A(uint param1, uint param2, uint param3, uint param4, uint param5)
-        B(param1)
-        C(param2, param3)
-        D(param4)
-        public
-        {
-            // do something with param5
+    // SPDX-License-Identifier: GPL-3.0
+    pragma solidity >=0.4.22 <0.7.0;
+
+
+    // Base contracts just to make this compile
+    contract B {
+        constructor(uint) public {
         }
     }
 
+
+    contract C {
+        constructor(uint, uint) public {
+        }
+    }
+
+
+    contract D {
+        constructor(uint) public {
+        }
+    }
+
+
     contract A is B, C, D {
-        function A(uint param1, uint param2, uint param3, uint param4, uint param5)
+        uint x;
+
+        constructor(uint param1, uint param2, uint param3, uint param4, uint param5)
+        B(param1)
+        C(param2, param3)
+        D(param4)
+        public {
+            x = param5;
+        }
+    }
+
+
+    contract X is B, C, D {
+        uint x;
+
+        constructor(uint param1, uint param2, uint param3, uint param4, uint param5)
             B(param1)
             C(param2, param3)
             D(param4)
             public {
-            // do something with param5
-        }
+                x = param5;
+            }
     }
+
 
 当用单个语句声明简短函数时，允许在一行中完成。
 
@@ -732,7 +837,24 @@ No::
 映射
 ========
 
-待定
+In variable declarations, do not separate the keyword ``mapping`` from its
+type by a space. Do not separate any nested ``mapping`` keyword from its type by
+whitespace.
+
+Yes::
+
+    mapping(uint => uint) map;
+    mapping(address => bool) registeredAddresses;
+    mapping(uint => mapping(bool => Data[])) public data;
+    mapping(uint => mapping(uint => s)) data;
+
+No::
+
+    mapping (uint => uint) map;
+    mapping( address => bool ) registeredAddresses;
+    mapping (uint => mapping (bool => Data[])) public data;
+    mapping(uint => mapping (uint => s)) data;
+
 
 变量声明
 =====================
@@ -793,6 +915,29 @@ No::
     x = y+z;
     x +=1;
 
+***************
+Order of Layout
+***************
+
+Layout contract elements in the following order:
+
+1. Pragma statements
+2. Import statements
+3. Interfaces
+4. Libraries
+5. Contracts
+
+Inside each contract, library or interface, use the following order:
+
+1. Type declarations
+2. State variables
+3. Events
+4. Functions
+
+.. note::
+
+    It might be clearer to declare types close to their use in events or state
+    variables.
 
 ******************
 命名规范
@@ -805,7 +950,7 @@ No::
 最后，基于代码库中的一致性，本文档中的任何规范总是可以被（代码库中的规范）取代。
 
 
-命名方式
+命名风格
 =============
 
 为了避免混淆，下面的名字用来指明不同的命名方式。
@@ -820,7 +965,7 @@ No::
 * ``mixedCase`` (混合式，与驼峰式的区别在于首字母小写！)
 * ``Capitalized_Words_With_Underscores`` (首字母大写和下划线)
 
-..注意:: 当在驼峰式命名中使用缩写时，应该将缩写中的所有字母都大写。 因此 HTTPServerError 比 HttpServerError 好。
+..note:: 当在驼峰式命名中使用缩写时，应该将缩写中的所有字母都大写。 因此 HTTPServerError 比 HttpServerError 好。
  当在混合式命名中使用缩写时，除了第一个缩写中的字母小写（如果它是整个名称的开头的话）以外，其他缩写中的字母均大写。
  因此 xmlHTTPRequest 比 XMLHTTPRequest 更好。
 
@@ -837,7 +982,81 @@ No::
 合约和库名称
 ==========================
 
-合约和库名称应该使用驼峰式风格。比如：``SimpleToken``，``SmartBank``，``CertificateHashRepository``，``Player``。
+合约和库名称应该使用驼峰式风格。比如：``SimpleToken``，``SmartBank``，``CertificateHashRepository``，``Player``，``Congress``, ``Owned``。
+* Contract and library names should also match their filenames.
+* If a contract file includes multiple contracts and/or libraries, then the filename should match the *core contract*. This is not recommended however if it can be avoided.
+
+As shown in the example below, if the contract name is ``Congress`` and the library name is ``Owned``, then their associated filenames should be ``Congress.sol`` and ``Owned.sol``.
+
+Yes::
+
+    // SPDX-License-Identifier: GPL-3.0
+    pragma solidity >=0.4.22 <0.7.0;
+
+
+    // Owned.sol
+    contract Owned {
+        address public owner;
+
+        constructor() public {
+            owner = msg.sender;
+        }
+
+        modifier onlyOwner {
+            require(msg.sender == owner);
+            _;
+        }
+
+        function transferOwnership(address newOwner) public onlyOwner {
+            owner = newOwner;
+        }
+    }
+
+and in ``Congress.sol``::
+
+    // SPDX-License-Identifier: GPL-3.0
+    pragma solidity >=0.4.0 <0.7.0;
+
+    import "./Owned.sol";
+
+
+    contract Congress is Owned, TokenRecipient {
+        //...
+    }
+
+No::
+
+    // SPDX-License-Identifier: GPL-3.0
+    pragma solidity >=0.4.22 <0.7.0;
+
+
+    // owned.sol
+    contract owned {
+        address public owner;
+
+        constructor() public {
+            owner = msg.sender;
+        }
+
+        modifier onlyOwner {
+            require(msg.sender == owner);
+            _;
+        }
+
+        function transferOwnership(address newOwner) public onlyOwner {
+            owner = newOwner;
+        }
+    }
+
+and in ``Congress.sol``::
+
+    import "./owned.sol";
+
+
+    contract Congress is owned, tokenRecipient {
+        //...
+    }
+
 
 结构体名称
 ==========================
@@ -874,7 +1093,7 @@ No::
 
 使用混合式命名风格。比如：``onlyBy``，``onlyAfter``，``onlyDuringThePreSale``。
 
-枚举变量命名
+枚举命名
 ====================
 
 在声明简单类型时，枚举应该使用驼峰式风格。比如：``TokenGroup``，``Frame``，``HashStyle``，``CharacterLocation``。
@@ -889,19 +1108,19 @@ No::
 
 
 ************************
-描述注释 NatSpec 
+描述注释 NatSpec
 ************************
 
 Solidity 智能合约有一种基于以太坊自然语言说明格式（Ethereum Natural Language Specification Format）的注释形式。
 
 Add comments above functions or contracts following `doxygen <http://www.doxygen.nl>`_ notation
-of one or multiple lines starting with `///` or a
-multiline comment starting with `/**` and ending with `*/`.
+of one or multiple lines starting with ``///`` or a
+multiline comment starting with ``/**`` and ending with ``*/``.
 
 For example, the contract from `a simple smart contract <simple-smart-contract>`_ with the comments
 added looks like the one below::
 
-    pragma solidity >=0.4.0 <0.7.0;
+    pragma solidity >=0.4.16 <0.7.0;
 
     /// @author The Solidity Team
     /// @title A simple storage example
